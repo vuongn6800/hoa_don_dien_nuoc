@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sổ Hoá Đơn</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#10151F">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sổ Hoá Đơn">
+<meta name="mobile-web-app-capable" content="yes">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --navy:#10151F;
+    --navy-soft:#1A2130;
+    --panel:#EDF0F2;
+    --panel-line:#D3DAE0;
+    --yellow:#E8B923;
+    --blue:#2E86AB;
+    --violet:#7B5EA7;
+    --red:#D64545;
+    --text-dark:#1B2027;
+    --text-soft:#5A6472;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--navy); font-family:'IBM Plex Sans', sans-serif; color:var(--text-dark);
+    min-height:100vh; display:flex; justify-content:center;
+  }
+  .app{ width:100%; max-width:460px; min-height:100vh; background:var(--navy); display:flex; flex-direction:column; position:relative; }
+
+  .header{ padding:32px 24px 18px; color:var(--panel); position:relative; }
+  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.18em; color:#8DA0B8; margin-bottom:10px; }
+  .header h1{ margin:0 0 8px; font-size:25px; font-weight:700; letter-spacing:-0.01em; }
+  .header p{ margin:0; font-size:12.5px; color:#8B95A3; line-height:1.5; max-width:34ch; }
+  .settings-btn{
+    position:absolute; top:30px; right:22px; background:none; border:1px solid rgba(237,240,242,.25);
+    color:var(--panel); width:34px; height:34px; border-radius:50%; font-size:15px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- Gauges ---------- */
+  .gauges{ display:flex; gap:10px; padding:18px 20px 24px; }
+  .gauge{ flex:1; display:flex; flex-direction:column; align-items:center; }
+  .gauge svg{ display:block; }
+  .gauge .gname{ font-size:10.5px; color:#8B95A3; margin-top:6px; letter-spacing:.03em; }
+  .gauge .gpct{ font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; margin-top:1px; }
+
+  /* ---------- Tabs ---------- */
+  .tabs{ background:var(--panel); display:flex; gap:6px; padding:14px 20px 4px; }
+  .tab{ flex:1; text-align:center; padding:10px 0; font-size:13.5px; font-weight:600; color:var(--text-soft); background:transparent; border:none; border-bottom:2px solid transparent; cursor:pointer; font-family:inherit; }
+  .tab.active{ color:var(--blue); border-bottom-color:var(--blue); }
+
+  .content{ background:var(--panel); flex:1; padding:6px 20px 100px; }
+
+  .add-row{ display:flex; gap:7px; margin:14px 0 20px; }
+  .add-btn{ flex:1; padding:12px 4px; border:none; border-radius:10px; font-family:inherit; font-weight:600; font-size:12px; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .add-btn.dien{ background:var(--yellow); color:#3A2E05; box-shadow:0 3px 0 #a9840f; }
+  .add-btn.nuoc{ background:var(--blue); box-shadow:0 3px 0 #1d5c78; }
+  .add-btn.internet{ background:var(--violet); box-shadow:0 3px 0 #4e3d75; }
+  .add-btn:active{ transform:translateY(2px); box-shadow:none; }
+
+  .anomaly-card{
+    display:flex; align-items:center; gap:10px; background:#FDEEEE; border:1px solid #F3C7C7; border-left:4px solid var(--red);
+    border-radius:8px; padding:11px 13px; margin-bottom:10px;
+  }
+  .anomaly-card .ic{ font-size:18px; }
+  .anomaly-card .txt{ flex:1; font-size:12.5px; line-height:1.4; }
+  .anomaly-card .txt b{ display:block; font-size:12.5px; margin-bottom:2px; }
+
+  .date-heading{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-soft); margin:22px 0 10px; padding-bottom:6px; border-bottom:1px dashed var(--panel-line); }
+  .date-heading:first-of-type{margin-top:4px;}
+
+  .bcard{ position:relative; background:#FFFFFF; border-radius:8px; padding:14px; margin-bottom:12px; display:flex; gap:12px; align-items:center; box-shadow:0 1px 3px rgba(16,21,31,.08); cursor:pointer; }
+  .bcard.dien{ border-left:3px solid var(--yellow); }
+  .bcard.nuoc{ border-left:3px solid var(--blue); }
+  .bcard.internet{ border-left:3px solid var(--violet); }
+  .badge{ width:44px;height:44px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:19px; }
+  .badge.dien{ background:#FBF0D2; }
+  .badge.nuoc{ background:#DCEBF2; }
+  .badge.internet{ background:#E7E0F0; }
+  .thumb{ width:44px;height:44px; border-radius:10px; object-fit:cover; flex-shrink:0; }
+  .bcard-mid{ flex:1; min-width:0; }
+  .bcard-type{ font-size:10.5px; font-weight:700; letter-spacing:.03em; margin-bottom:4px; }
+  .bcard-type.dien{ color:#9A7710; }
+  .bcard-type.nuoc{ color:var(--blue); }
+  .bcard-type.internet{ color:var(--violet); }
+  .bcard-note{ font-size:12.5px; color:var(--text-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bcard-reading{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--text-soft); margin-top:2px; }
+  .bcard-amount{ font-family:'JetBrains Mono', monospace; font-weight:700; font-size:14.5px; color:var(--text-dark); white-space:nowrap; }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--text-soft); }
+  .empty-state .icon{font-size:32px; margin-bottom:10px;}
+  .empty-state p{font-size:13.5px; line-height:1.6; max-width:30ch; margin:0 auto;}
+
+  /* ---------- Stats ---------- */
+  .year-nav{ display:flex; align-items:center; justify-content:center; gap:18px; margin:14px 0 18px; }
+  .year-nav button{ background:none; border:1px solid var(--panel-line); width:30px;height:30px; border-radius:50%; font-size:14px; cursor:pointer; color:var(--text-dark); }
+  .year-nav span{ font-family:'JetBrains Mono', monospace; font-size:14px; letter-spacing:.05em; min-width:60px; text-align:center; }
+
+  .stat-cards{ display:flex; gap:8px; margin-bottom:18px; }
+  .stat-card{ flex:1; border-radius:10px; padding:14px 8px; text-align:center; color:#fff; }
+  .stat-card.dien{ background:var(--yellow); color:#3A2E05; }
+  .stat-card.nuoc{ background:var(--blue); }
+  .stat-card.internet{ background:var(--violet); }
+  .stat-card .label{ font-family:'JetBrains Mono', monospace; font-size:9px; letter-spacing:.08em; opacity:.85; margin-bottom:5px; }
+  .stat-card .amount{ font-family:'JetBrains Mono', monospace; font-size:13.5px; font-weight:700; }
+
+  .section-title{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-soft); margin:22px 0 12px; }
+  .stats-empty{ text-align:center; padding:40px 20px; color:var(--text-soft); font-size:13px; }
+
+  .month-chart{ display:flex; align-items:flex-end; gap:6px; height:120px; padding:0 2px; border-bottom:1px solid var(--panel-line); }
+  .month-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .month-bar{ width:100%; max-width:22px; border-radius:3px 3px 0 0; min-height:2px; background:var(--blue); }
+  .month-bar.anomaly{ background:var(--red); }
+  .month-lbl{ font-size:9px; color:var(--text-soft); margin-top:6px; font-family:'JetBrains Mono', monospace; }
+
+  .legend{ display:flex; gap:14px; justify-content:center; margin:12px 0 4px; font-size:11px; color:var(--text-soft); }
+  .legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .legend i{ width:9px; height:9px; border-radius:3px; display:inline-block; }
+
+  /* ---------- Modal ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(16,21,31,.6); display:none; align-items:flex-end; justify-content:center; z-index:50; }
+  .overlay.open{display:flex;}
+  .modal{ background:var(--panel); width:100%; max-width:460px; border-radius:18px 18px 0 0; padding:22px 20px 26px; max-height:92vh; overflow-y:auto; animation:slideUp .25s ease; }
+  @keyframes slideUp{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal h2{margin:0 0 4px; font-size:18px;}
+  .modal .sub{font-size:12.5px; color:var(--text-soft); margin:0 0 18px;}
+
+  .type-toggle{ display:flex; gap:7px; margin-bottom:18px; }
+  .type-choice{ flex:1; text-align:center; padding:10px 4px; border-radius:9px; border:1.5px solid var(--panel-line); background:#fff; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-soft); }
+  .type-choice.sel.dien{ border-color:var(--yellow); background:#FBF0D2; color:#8A6A0D; }
+  .type-choice.sel.nuoc{ border-color:var(--blue); background:#DCEBF2; color:var(--blue); }
+  .type-choice.sel.internet{ border-color:var(--violet); background:#E7E0F0; color:var(--violet); }
+
+  .field{margin-bottom:16px;}
+  .field label{ display:block; font-size:11.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-soft); margin-bottom:7px; }
+  .num-input-wrap{ display:flex; align-items:baseline; gap:6px; border-bottom:2px solid var(--text-dark); padding-bottom:6px; }
+  .num-input-wrap input{ border:none; background:none; outline:none; font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:700; width:100%; color:var(--text-dark); }
+  .num-input-wrap span{ font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text-soft); white-space:nowrap; }
+
+  .field input[type=text], .field input[type=month]{ width:100%; padding:11px 12px; border:1px solid var(--panel-line); border-radius:8px; font-family:inherit; font-size:13.5px; background:#fff; color:var(--text-dark); }
+  .field input:focus{ outline:2px solid var(--blue); outline-offset:1px; }
+  .two-col{ display:flex; gap:12px; }
+  .two-col .field{ flex:1; }
+
+  .photo-zone{ border:1.5px dashed var(--panel-line); border-radius:10px; padding:16px; text-align:center; background:#fff; }
+  .photo-zone img{ width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-bottom:10px; }
+  .photo-zone .hint{ font-size:11.5px; color:var(--text-soft); margin:8px 0 12px; line-height:1.5; }
+  .photo-btn{ display:inline-block; background:var(--navy); color:var(--panel); padding:9px 18px; border-radius:20px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .photo-btn input{display:none;}
+
+  .modal-actions{ display:flex; gap:10px; margin-top:22px; }
+  .btn-secondary, .btn-primary, .btn-danger{ flex:1; padding:13px; border-radius:9px; border:none; font-family:inherit; font-weight:600; font-size:13.5px; cursor:pointer; }
+  .btn-secondary{ background:transparent; border:1px solid var(--panel-line); color:var(--text-soft); }
+  .btn-primary{ background:var(--blue); color:#fff; }
+  .btn-danger{ background:var(--red); color:#fff; }
+
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--navy); color:var(--panel); padding:10px 18px; border-radius:20px; font-size:12.5px; z-index:70; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <button class="settings-btn" onclick="openSettings()" title="Cài đặt & sao lưu">⋯</button>
+    <div class="eyebrow">THEO DÕI HOÁ ĐƠN BẰNG ẢNH</div>
+    <h1>Sổ Hoá Đơn</h1>
+    <p>Chụp đồng hồ điện, nước, hoá đơn internet mỗi tháng — sổ tự vẽ biểu đồ để lộ tháng nào dùng bất thường.</p>
+  </div>
+  <div class="gauges" id="gauges"></div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabLogBtn" onclick="switchTab('log')">Sổ ghi</button>
+    <button class="tab" id="tabStatsBtn" onclick="switchTab('stats')">Thống kê</button>
+  </div>
+
+  <div class="content" id="content"></div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Thêm hoá đơn mới</h2>
+    <p class="sub">Chụp lại đồng hồ hoặc hoá đơn để tra cứu sau này.</p>
+
+    <div class="type-toggle">
+      <div class="type-choice dien" id="typeDienBtn" onclick="selectType('dien')">⚡ Điện</div>
+      <div class="type-choice nuoc" id="typeNuocBtn" onclick="selectType('nuoc')">💧 Nước</div>
+      <div class="type-choice internet" id="typeInternetBtn" onclick="selectType('internet')">📶 Internet</div>
+    </div>
+
+    <div class="field">
+      <label>Ảnh đồng hồ / hoá đơn</label>
+      <div class="photo-zone" id="photoZone"></div>
+    </div>
+
+    <div class="field">
+      <label>Tháng hoá đơn</label>
+      <input type="month" id="periodInput">
+    </div>
+
+    <div class="two-col" id="readingRow">
+      <div class="field">
+        <label id="readingLabel">Chỉ số đồng hồ</label>
+        <div class="num-input-wrap">
+          <input type="text" inputmode="numeric" id="readingInput" placeholder="0" oninput="formatNumInput(this)">
+          <span id="readingUnit">kWh</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Số tiền</label>
+        <div class="num-input-wrap">
+          <input type="text" inputmode="numeric" id="amountInput" placeholder="0" oninput="formatNumInput(this)">
+          <span>đ</span>
+        </div>
+      </div>
+    </div>
+    <div class="field" id="amountOnlyRow" style="display:none;">
+      <label>Số tiền</label>
+      <div class="num-input-wrap">
+        <input type="text" inputmode="numeric" id="amountInput2" placeholder="0" oninput="formatNumInput(this)">
+        <span>đ</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Ghi chú (không bắt buộc)</label>
+      <input type="text" id="noteInput" placeholder="Ví dụ: Hoá đơn EVN tháng 8">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Huỷ</button>
+      <button class="btn-primary" onclick="saveEntry()">Lưu vào sổ</button>
+    </div>
+    <div class="modal-actions" id="deleteRow" style="display:none;">
+      <button class="btn-danger" onclick="deleteEntry()">Xoá hoá đơn này</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>Cài đặt & sao lưu</h2>
+    <p class="sub">Dữ liệu chỉ lưu trên máy này. Xuất file sao lưu và giữ ở nơi an toàn (iCloud, email cho chính mình...) để không mất dữ liệu khi reset máy hoặc đổi điện thoại.</p>
+
+    <div class="field">
+      <label>Sao lưu dữ liệu</label>
+      <button class="btn-primary" style="width:100%; margin-bottom:10px;" onclick="exportBackup()">Xuất file sao lưu</button>
+      <label class="photo-btn" style="display:block; text-align:center; background:var(--blue);">
+        Nhập lại từ file sao lưu
+        <input type="file" accept="application/json" style="display:none" onchange="importBackup(event)">
+      </label>
+    </div>
+
+    <div class="field" style="margin-top:20px;">
+      <label>Vùng nguy hiểm</label>
+      <button class="btn-danger" style="width:100%;" onclick="clearAllData()">Xoá toàn bộ dữ liệu</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" style="flex:1;" onclick="closeSettings()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const TYPE_META = {
+    dien: {label:'Điện', icon:'⚡', unit:'kWh', color:'#E8B923'},
+    nuoc: {label:'Nước', icon:'💧', unit:'m³', color:'#2E86AB'},
+    internet: {label:'Internet', icon:'📶', unit:null, color:'#7B5EA7'}
+  };
+
+  let state = {
+    entries: [],
+    tab: 'log',
+    statsYear: new Date().getFullYear(),
+    editingId: null,
+    selectedType: 'dien',
+    photoData: null,
+    loaded: false
+  };
+
+  const contentEl = document.getElementById('content');
+
+  // ---------- IndexedDB ----------
+  const DB_NAME = 'hoa-don-db';
+  const STORE = 'kv';
+  function openDB(){
+    return new Promise((resolve, reject)=>{
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbGet(key){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbSet(key, value){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function loadData(){
+    try{
+      const val = await idbGet('entries');
+      state.entries = val ? JSON.parse(val) : [];
+    }catch(e){ state.entries = []; }
+    state.loaded = true;
+    render();
+  }
+  async function saveData(){
+    try{ await idbSet('entries', JSON.stringify(state.entries)); }
+    catch(e){ showToast('Không lưu được dữ liệu, thử lại nhé.'); }
+  }
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 1900);
+  }
+
+  function switchTab(tab){
+    state.tab = tab;
+    document.getElementById('tabLogBtn').classList.toggle('active', tab==='log');
+    document.getElementById('tabStatsBtn').classList.toggle('active', tab==='stats');
+    render();
+  }
+
+  function fmtVND(n){ return Number(n||0).toLocaleString('vi-VN') + ' đ'; }
+  function fmtPeriod(p){
+    const [y,m] = p.split('-');
+    return `Tháng ${Number(m)}/${y}`;
+  }
+  function sortedByPeriodDesc(list){
+    return [...list].sort((a,b)=> b.period.localeCompare(a.period));
+  }
+
+  function render(){
+    renderGauges();
+    if(!state.loaded){ contentEl.innerHTML = `<div class="empty-state"><p>Đang mở sổ...</p></div>`; return; }
+    if(state.tab==='log') renderLog(); else renderStats();
+  }
+
+  // ---------- Gauges (đầu trang) ----------
+  function buildGaugeSVG(pct, color){
+    // pct: -100..+100+ (% thay đổi so tháng trước); vẽ cung tròn 270deg
+    const size = 58, stroke = 6, r = (size-stroke)/2;
+    const cx = size/2, cy = size/2;
+    const totalDeg = 270, startDeg = 135; // bắt đầu từ góc dưới-trái, quay thuận kim đồng hồ
+    const circumference = 2*Math.PI*r*(totalDeg/360);
+    const clamped = Math.max(-100, Math.min(100, pct===null?0:pct));
+    const filledRatio = pct===null ? 0 : Math.min(1, Math.abs(clamped)/100);
+    const dash = circumference*filledRatio;
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#DEE3E7"
+          stroke-width="${stroke}" stroke-linecap="round"
+          stroke-dasharray="${circumference} 999"
+          transform="rotate(${startDeg} ${cx} ${cy})"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${pct!==null && pct>5 ? '#D64545' : color}"
+          stroke-width="${stroke}" stroke-linecap="round"
+          stroke-dasharray="${dash} 999"
+          transform="rotate(${startDeg} ${cx} ${cy})"/>
+      </svg>`;
+  }
+
+  function renderGauges(){
+    const el = document.getElementById('gauges');
+    let html = '';
+    for(const t of ['dien','nuoc','internet']){
+      const meta = TYPE_META[t];
+      const list = sortedByPeriodDesc(state.entries.filter(e=>e.type===t));
+      let pct = null, pctLabel = '---';
+      if(list.length>=2){
+        const cur = Number(list[0].amount), prev = Number(list[1].amount);
+        if(prev>0){ pct = ((cur-prev)/prev)*100; pctLabel = (pct>=0?'+':'') + pct.toFixed(0) + '%'; }
+      } else if(list.length===1){
+        pctLabel = 'Mới';
+      }
+      html += `
+        <div class="gauge">
+          ${buildGaugeSVG(pct, meta.color)}
+          <div class="gname">${meta.icon} ${meta.label}</div>
+          <div class="gpct" style="color:${pct!==null && pct>5 ? '#D64545' : '#8B95A3'}">${pctLabel}</div>
+        </div>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function renderLog(){
+    const sorted = sortedByPeriodDesc(state.entries);
+    let html = `
+      <div class="add-row">
+        <button class="add-btn dien" onclick="openModal(null,'dien')">⚡ Điện</button>
+        <button class="add-btn nuoc" onclick="openModal(null,'nuoc')">💧 Nước</button>
+        <button class="add-btn internet" onclick="openModal(null,'internet')">📶 Mạng</button>
+      </div>`;
+
+    // anomaly check cho tháng mới nhất của mỗi loại
+    for(const t of ['dien','nuoc','internet']){
+      const list = sortedByPeriodDesc(state.entries.filter(e=>e.type===t));
+      if(list.length < 4) continue;
+      const cur = Number(list[0].amount);
+      const history = list.slice(1, 7).map(e=>Number(e.amount));
+      const avg = history.reduce((s,v)=>s+v,0)/history.length;
+      if(avg>0 && cur > avg*1.3){
+        const pctOver = Math.round(((cur-avg)/avg)*100);
+        html += `<div class="anomaly-card">
+          <div class="ic">⚠️</div>
+          <div class="txt"><b>${TYPE_META[t].icon} ${TYPE_META[t].label} ${fmtPeriod(list[0].period)} cao bất thường</b>Cao hơn ${pctOver}% so với trung bình 6 tháng gần đây.</div>
+        </div>`;
+      }
+    }
+
+    if(sorted.length===0){
+      html += `<div class="empty-state">
+        <div class="icon">🔌</div>
+        <p>Sổ còn trống. Chụp ảnh đồng hồ điện, nước hoặc hoá đơn internet đầu tiên của bạn.</p>
+      </div>`;
+      contentEl.innerHTML = html;
+      return;
+    }
+
+    let lastHeading = null;
+    for(const e of sorted){
+      const heading = fmtPeriod(e.period);
+      if(heading !== lastHeading){ html += `<div class="date-heading">${heading}</div>`; lastHeading = heading; }
+      const meta = TYPE_META[e.type];
+      const consumption = computeConsumption(e);
+      html += `
+        <div class="bcard ${e.type}" onclick="openModal('${e.id}')">
+          ${e.photo ? `<img class="thumb" src="${e.photo}">` : `<div class="badge ${e.type}">${meta.icon}</div>`}
+          <div class="bcard-mid">
+            <div class="bcard-type ${e.type}">${meta.icon} ${meta.label}</div>
+            <div class="bcard-note">${e.note || '&nbsp;'}</div>
+            ${consumption!==null ? `<div class="bcard-reading">Tiêu thụ: ${consumption.toLocaleString('vi-VN')} ${meta.unit}</div>` : ''}
+          </div>
+          <div class="bcard-amount">${fmtVND(e.amount)}</div>
+        </div>`;
+    }
+    contentEl.innerHTML = html;
+  }
+
+  function computeConsumption(entry){
+    if(!entry.reading || TYPE_META[entry.type].unit===null) return null;
+    const sameType = sortedByPeriodDesc(state.entries.filter(e=>e.type===entry.type && e.period < entry.period));
+    if(!sameType.length || !sameType[0].reading) return null;
+    const diff = Number(entry.reading) - Number(sameType[0].reading);
+    return diff>=0 ? diff : null;
+  }
+
+  function renderStats(){
+    const y = state.statsYear;
+    const yearEntries = state.entries.filter(e=> e.period.startsWith(String(y)));
+    let html = `
+      <div class="year-nav">
+        <button onclick="changeStatsYear(-1)">‹</button>
+        <span>${y}</span>
+        <button onclick="changeStatsYear(1)">›</button>
+      </div>`;
+
+    const totals = {dien:0, nuoc:0, internet:0};
+    yearEntries.forEach(e=>{ totals[e.type] += Number(e.amount); });
+    html += `
+      <div class="stat-cards">
+        <div class="stat-card dien"><div class="label">ĐIỆN</div><div class="amount">${fmtVND(totals.dien)}</div></div>
+        <div class="stat-card nuoc"><div class="label">NƯỚC</div><div class="amount">${fmtVND(totals.nuoc)}</div></div>
+        <div class="stat-card internet"><div class="label">MẠNG</div><div class="amount">${fmtVND(totals.internet)}</div></div>
+      </div>`;
+
+    if(yearEntries.length===0){
+      html += `<div class="stats-empty">Không có hoá đơn nào trong năm này.</div>`;
+      contentEl.innerHTML = html;
+      return;
+    }
+
+    // biểu đồ theo tháng cho tổng chi (3 loại cộng lại), đánh dấu tháng bất thường
+    const monthTotals = new Array(13).fill(0);
+    for(let mm=1; mm<=12; mm++){
+      const key = `${y}-${String(mm).padStart(2,'0')}`;
+      monthTotals[mm] = state.entries.filter(e=>e.period===key).reduce((s,e)=>s+Number(e.amount),0);
+    }
+    const nonZero = monthTotals.filter(v=>v>0);
+    const avgAll = nonZero.length ? nonZero.reduce((s,v)=>s+v,0)/nonZero.length : 0;
+    const maxVal = Math.max(...monthTotals, 1);
+
+    html += `<div class="section-title">Tổng chi theo tháng</div>`;
+    html += `<div class="month-chart">`;
+    for(let mm=1; mm<=12; mm++){
+      const v = monthTotals[mm];
+      const h = v>0 ? Math.max(4, Math.round((v/maxVal)*110)) : 2;
+      const anomaly = avgAll>0 && v > avgAll*1.3;
+      html += `<div class="month-col">
+        <div class="month-bar ${anomaly?'anomaly':''}" style="height:${h}px" title="Tháng ${mm}: ${fmtVND(v)}"></div>
+        <div class="month-lbl">${mm}</div>
+      </div>`;
+    }
+    html += `</div>`;
+    html += `<div class="legend"><span><i style="background:var(--blue)"></i>Bình thường</span><span><i style="background:var(--red)"></i>Cao bất thường (&gt;130% TB)</span></div>`;
+
+    // danh sách chi tiết theo loại
+    for(const t of ['dien','nuoc','internet']){
+      const list = yearEntries.filter(e=>e.type===t).sort((a,b)=>a.period.localeCompare(b.period));
+      if(!list.length) continue;
+      const meta = TYPE_META[t];
+      html += `<div class="section-title">${meta.icon} ${meta.label} trong năm</div>`;
+      for(const e of list){
+        const cons = computeConsumption(e);
+        html += `<div class="fuel-row" style="display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--panel-line); font-size:12px;">
+          <div style="width:64px; color:var(--text-soft); font-family:'JetBrains Mono',monospace; font-size:11px;">${fmtPeriod(e.period).replace('Tháng ','Th.')}</div>
+          <div style="flex:1;">${cons!==null ? cons.toLocaleString('vi-VN')+' '+meta.unit : (e.note||'')}</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-weight:600;">${fmtVND(e.amount)}</div>
+        </div>`;
+      }
+    }
+
+    contentEl.innerHTML = html;
+  }
+
+  function changeStatsYear(delta){ state.statsYear += delta; renderStats(); }
+
+  // ---------- Modal ----------
+  function openModal(id, presetType){
+    state.editingId = id || null;
+    const existing = id ? state.entries.find(e=>e.id===id) : null;
+
+    document.getElementById('modalTitle').textContent = existing ? 'Sửa hoá đơn' : 'Thêm hoá đơn mới';
+    document.getElementById('periodInput').value = existing ? existing.period : new Date().toISOString().slice(0,7);
+    document.getElementById('readingInput').value = existing && existing.reading ? Number(existing.reading).toLocaleString('vi-VN') : '';
+    document.getElementById('amountInput').value = existing ? Number(existing.amount).toLocaleString('vi-VN') : '';
+    document.getElementById('amountInput2').value = existing ? Number(existing.amount).toLocaleString('vi-VN') : '';
+    document.getElementById('noteInput').value = existing ? (existing.note||'') : '';
+
+    state.selectedType = existing ? existing.type : (presetType || 'dien');
+    state.photoData = existing ? existing.photo : null;
+
+    applyTypeUI();
+    renderPhotoZone();
+    document.getElementById('deleteRow').style.display = existing ? 'flex' : 'none';
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+
+  function selectType(t){ state.selectedType = t; applyTypeUI(); }
+  function applyTypeUI(){
+    ['dien','nuoc','internet'].forEach(t=>{
+      document.getElementById('type'+t[0].toUpperCase()+t.slice(1)+'Btn').classList.toggle('sel', state.selectedType===t);
+    });
+    const meta = TYPE_META[state.selectedType];
+    const hasReading = meta.unit !== null;
+    document.getElementById('readingRow').style.display = hasReading ? 'flex' : 'none';
+    document.getElementById('amountOnlyRow').style.display = hasReading ? 'none' : 'block';
+    if(hasReading){
+      document.getElementById('readingLabel').textContent = `Chỉ số đồng hồ`;
+      document.getElementById('readingUnit').textContent = meta.unit;
+    }
+  }
+
+  function renderPhotoZone(){
+    const zone = document.getElementById('photoZone');
+    if(state.photoData){
+      zone.innerHTML = `
+        <img src="${state.photoData}">
+        <label class="photo-btn">Chụp lại ảnh khác
+          <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event)">
+        </label>`;
+    }else{
+      zone.innerHTML = `
+        <div class="hint">Chụp lại đồng hồ hoặc hoá đơn.</div>
+        <label class="photo-btn">Chụp / chọn ảnh
+          <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event)">
+        </label>`;
+    }
+  }
+
+  function handlePhotoInput(evt){
+    const file = evt.target.files[0];
+    if(!file) return;
+    compressImage(file, (dataUrl)=>{ state.photoData = dataUrl; renderPhotoZone(); });
+  }
+
+  function compressImage(file, cb){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 480;
+        const scale = Math.min(1, maxW/img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width*scale; canvas.height = img.height*scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        cb(canvas.toDataURL('image/jpeg', 0.55));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function formatNumInput(el){
+    const raw = el.value.replace(/[^\d]/g,'');
+    el.value = raw ? Number(raw).toLocaleString('vi-VN') : '';
+  }
+
+  async function saveEntry(){
+    const period = document.getElementById('periodInput').value;
+    const hasReading = TYPE_META[state.selectedType].unit !== null;
+    const reading = hasReading ? Number(document.getElementById('readingInput').value.replace(/[^\d]/g,'')) || null : null;
+    const amount = Number((hasReading ? document.getElementById('amountInput').value : document.getElementById('amountInput2').value).replace(/[^\d]/g,''));
+    const note = document.getElementById('noteInput').value.trim();
+
+    if(!period){ showToast('Chọn tháng hoá đơn trước khi lưu nhé.'); return; }
+    if(!amount || amount<=0){ showToast('Nhập số tiền trước khi lưu nhé.'); return; }
+
+    if(state.editingId){
+      const e = state.entries.find(x=>x.id===state.editingId);
+      Object.assign(e, {period, reading, amount, note, type: state.selectedType, photo: state.photoData});
+    }else{
+      state.entries.push({
+        id: 'h'+Date.now()+Math.random().toString(36).slice(2,7),
+        period, reading, amount, note, type: state.selectedType, photo: state.photoData
+      });
+    }
+    await saveData();
+    closeModal();
+    render();
+    showToast('Đã lưu vào sổ.');
+  }
+
+  async function deleteEntry(){
+    if(!state.editingId) return;
+    if(!confirm('Xoá hoá đơn này khỏi sổ?')) return;
+    state.entries = state.entries.filter(e=>e.id!==state.editingId);
+    await saveData();
+    closeModal();
+    render();
+    showToast('Đã xoá hoá đơn.');
+  }
+
+  // ---------- Cài đặt & sao lưu ----------
+  function openSettings(){ document.getElementById('settingsOverlay').classList.add('open'); }
+  function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('open'); }
+
+  function exportBackup(){
+    if(state.entries.length === 0){ showToast('Sổ chưa có gì để sao lưu.'); return; }
+    const payload = { app: 'so-hoa-don', exportedAt: new Date().toISOString(), entries: state.entries };
+    const blob = new Blob([JSON.stringify(payload)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `hoa-don-backup-${dateStr}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Đã tạo file sao lưu — nhớ lưu file này vào nơi an toàn.');
+  }
+
+  function importBackup(evt){
+    const file = evt.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try{
+        const data = JSON.parse(e.target.result);
+        const incoming = Array.isArray(data) ? data : data.entries;
+        if(!Array.isArray(incoming)) throw new Error('invalid');
+        const existingIds = new Set(state.entries.map(x=>x.id));
+        let added = 0;
+        for(const en of incoming){
+          if(en && en.id && !existingIds.has(en.id)){ state.entries.push(en); added++; }
+        }
+        await saveData();
+        closeSettings();
+        render();
+        showToast(added > 0 ? `Đã khôi phục ${added} hoá đơn.` : 'File này không có hoá đơn mới.');
+      }catch(err){ showToast('File sao lưu không hợp lệ.'); }
+      evt.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  async function clearAllData(){
+    if(!confirm('Xoá tất cả hoá đơn đã lưu? Không thể hoàn tác.')) return;
+    state.entries = [];
+    await saveData();
+    closeSettings();
+    render();
+    showToast('Đã xoá toàn bộ dữ liệu.');
+  }
+
+  loadData();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
